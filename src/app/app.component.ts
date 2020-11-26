@@ -6,7 +6,7 @@ import * as THREE from 'three';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit{
 
   public scene = new THREE.Scene();
   public renderer = new THREE.WebGLRenderer({
