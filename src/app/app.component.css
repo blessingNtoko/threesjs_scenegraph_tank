@@ -8,3 +8,13 @@ body {
 canvas {
   display: block;
 }
+
+#info {
+  position: absolute;
+  left: 1em;
+  top: 1em;
+  background: rgba(0, 0, 0, .8);
+  padding: .5em;
+  color: white;
+  font-family: monospace;
+}

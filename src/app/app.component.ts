@@ -30,12 +30,6 @@ export class AppComponent {
       overAllcamera.position.set(8, 4, 10).multiplyScalar(3);
       overAllcamera.lookAt(0, 0, 0);
 
-      window.addEventListener('resize', () => {
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        overAllcamera.aspect = window.innerWidth / window.innerHeight;
-        overAllcamera.updateProjectionMatrix();
-      }, false);
-
       // ================================================================= Lights ==============================================================
 
 
@@ -206,11 +200,84 @@ export class AppComponent {
       targetCameraPivot.add(targetCamera);
       console.log('Target bob 2 ->', targetBob);
 
+      // ================================================================= Sine-like wave ==============================================================
+
+      const curve = new THREE.SplineCurve([
+        new THREE.Vector2(-10, 0),
+        new THREE.Vector2(-5, 5),
+        new THREE.Vector2(0, 0),
+        new THREE.Vector2(5, -5),
+        new THREE.Vector2(10, 0),
+        new THREE.Vector2(5, 10),
+        new THREE.Vector2(-5, 10),
+        new THREE.Vector2(-10, -10),
+        new THREE.Vector2(-15, -8),
+        new THREE.Vector2(-10, 0),
+      ]);
+
+      const points = curve.getPoints(50);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: 0xff0000
+      });
+      const splineObject = new THREE.Line(geometry, material);
+      splineObject.rotation.x = Math.PI * .5;
+      splineObject.rotation.y = .05;
+      this.scene.add(splineObject);
+
+      // ================================================================= Target, Tank and Cameras ==============================================================
+
+      const targetPosition = new THREE.Vector3();
+      const tankPosition = new THREE.Vector2();
+      const tankTarget = new THREE.Vector2();
+
+      const cameras = [
+        {cam: overAllcamera, desc: 'detached camera'},
+        {cam: turretCamera, desc: 'on turret looking at target'},
+        {cam: targetCamera, desc: 'near target looking at tank'},
+        {cam: tankCamera, desc: 'above back of tank'},
+      ];
+
+      const infoElem = document.querySelector('#info');
+
+
+      window.addEventListener('resize', () => {
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+        cameras.forEach(cameraInfo => {
+          const camera = cameraInfo.cam;
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+        });
+      }, false);
+
       // ================================================================= Animate ==============================================================
 
       try {
 
-        const animate = () => {
+        const animate = (time) => {
+          // console.log('Time ->', time);
+
+          time *= .001;
+
+          // move target
+          targetOrbit.rotation.y = time * .27;
+          targetBob.position.y = Math.sin(time * 2) * 4;
+          targetMesh.rotation.x = time * 7;
+          targetMesh.rotation.y = time * 13;
+          targetMaterial.emissive.setHSL(time * 10 % 1, 1, .25);
+          targetMaterial.color.setHSL(time * 10 % 1, 1, .25);
+
+          // move tank
+          const tankTime = time * .05;
+          curve.getPointAt(tankTime % 1, tankPosition);
+          curve.getPointAt((tankTime + .01) % 1, tankTarget);
+          tank.position.set(tankPosition.x, 0, tank.position.y);
+          tank.lookAt(tankTarget.x, 0, tankTarget.y);
+
+          // face turret at target
+          targetMesh.getWorldPosition(targetPosition);
+
           wheelMeshes.forEach(mesh => {
             mesh.rotation.x += .03;
           });
@@ -218,7 +285,7 @@ export class AppComponent {
           this.renderer.render(this.scene, overAllcamera)
           requestAnimationFrame(animate);
         }
-        animate();
+        requestAnimationFrame(animate);
 
       } catch (error) {
         console.error('Error in animate() ->', error);
