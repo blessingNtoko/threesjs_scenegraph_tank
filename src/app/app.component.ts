@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { truncate } from 'fs';
 import * as THREE from 'three';
 
 @Component({
@@ -19,6 +20,7 @@ export class AppComponent {
 
   private init() {
     try {
+      // ================================================================= Renderer and Camera ==============================================================
 
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.renderer.setClearColor(0xaaaaaa);
@@ -34,6 +36,9 @@ export class AppComponent {
         overAllcamera.aspect = window.innerWidth / window.innerHeight;
         overAllcamera.updateProjectionMatrix();
       }, false);
+
+      // ================================================================= Lights ==============================================================
+
 
       {
         const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -59,6 +64,9 @@ export class AppComponent {
         this.scene.add(light);
       }
 
+      // ================================================================= Ground ==============================================================
+
+
       const groundGeometry = new THREE.PlaneBufferGeometry(50, 50);
       const groundMaterial = new THREE.MeshPhongMaterial({
         color: 0xcc8866
@@ -67,6 +75,8 @@ export class AppComponent {
       groundMesh.rotation.x = Math.PI * -.5;
       groundMesh.receiveShadow = true;
       this.scene.add(groundMesh);
+
+      // ================================================================= Tank body & Tank Camera ==============================================================
 
       const carWidth = 4;
       const carHeight = 1;
@@ -91,83 +101,113 @@ export class AppComponent {
       tankCamera.rotation.y = Math.PI;
       bodyMesh.add(tankCamera);
 
-      try {
+      // ============================================================ Wheels ========================================================================
 
-        const wheelRadius = 1;
-        const wheelThickness = .5;
-        const wheelSegments = 6;
-        const wheelGeometry = new THREE.CylinderBufferGeometry(
-          wheelRadius, // top radius
-          wheelRadius, // bottom radius
-          wheelThickness, // height of cylinder
-          wheelSegments
-        );
-        const wheelMaterial = new THREE.MeshPhongMaterial({
-          color: 0x888888
-        });
-        const wheelPositions = [
-          [-carWidth / 2 - wheelThickness / 2, -carHeight / 2, carLength / 3],
-          [carWidth / 2 + wheelThickness / 2, -carHeight / 2, carLength / 3],
-          [-carWidth / 2 - wheelThickness / 2, -carHeight / 2, 0],
-          [carWidth / 2 + wheelThickness / 2, -carHeight / 2, 0],
-          [-carWidth / 2 - wheelThickness / 2, -carHeight / 2, -carLength / 3],
-          [carWidth / 2 + wheelThickness / 2, -carHeight / 2, -carLength / 3],
-        ];
+      const wheelRadius = 1;
+      const wheelThickness = .5;
+      const wheelSegments = 6;
+      const wheelGeometry = new THREE.CylinderBufferGeometry(
+        wheelRadius, // top radius
+        wheelRadius, // bottom radius
+        wheelThickness, // height of cylinder
+        wheelSegments
+      );
+      const wheelMaterial = new THREE.MeshPhongMaterial({
+        color: 0x888888
+      });
+      const wheelPositions = [
+        [-carWidth / 2 - wheelThickness / 2, -carHeight / 2, carLength / 3],
+        [carWidth / 2 + wheelThickness / 2, -carHeight / 2, carLength / 3],
+        [-carWidth / 2 - wheelThickness / 2, -carHeight / 2, 0],
+        [carWidth / 2 + wheelThickness / 2, -carHeight / 2, 0],
+        [-carWidth / 2 - wheelThickness / 2, -carHeight / 2, -carLength / 3],
+        [carWidth / 2 + wheelThickness / 2, -carHeight / 2, -carLength / 3],
+      ];
 
-        const wheelMeshes = wheelPositions.map(position => {
-          const mesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
-          mesh.position.set(position[0], position[1], position[2]);
-          // mesh.position.set(...position);
-          mesh.rotation.z = Math.PI * .5;
-          mesh.castShadow = true;
-          bodyMesh.add(mesh);
-          return mesh;
-        });
-      } catch (error) {
-        console.error('Error with wheels ->', error);
-      }
+      const wheelMeshes = wheelPositions.map(position => {
+        const mesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        mesh.position.set(position[0], position[1], position[2]);
+        // mesh.position.set(...position);
+        mesh.rotation.z = Math.PI * .5;
+        mesh.castShadow = true;
+        bodyMesh.add(mesh);
+        return mesh;
+      });
 
-      try {
+      // ============================================================= Dome =======================================================================
 
-        const domeRadius = 2;
-        const domeWidthSubdivisions = 12;
-        const domeHeightSubdivisions = 12;
-        const domePhiStart = 0;
-        const domePhiEnd = Math.PI * 2;
-        const domeThetaStart = 0;
-        const domeThetaEnd = Math.PI * .5;
-        const domeGeometry = new THREE.SphereBufferGeometry(
-          domeRadius, domeWidthSubdivisions, domeHeightSubdivisions, domePhiStart,
-          domePhiEnd, domeThetaStart, domeThetaEnd
-        );
-        const domeMesh = new THREE.Mesh(domeGeometry, bodyMaterial);
-        domeMesh.castShadow = true;
-        bodyMesh.add(domeMesh);
-        domeMesh.position.y = .5;
-      } catch (error) {
-        console.error('Error with dome ->', error);
-      }
+      const domeRadius = 2;
+      const domeWidthSubdivisions = 12;
+      const domeHeightSubdivisions = 12;
+      const domePhiStart = 0;
+      const domePhiEnd = Math.PI * 2;
+      const domeThetaStart = 0;
+      const domeThetaEnd = Math.PI * .5;
+      const domeGeometry = new THREE.SphereBufferGeometry(
+        domeRadius, domeWidthSubdivisions, domeHeightSubdivisions, domePhiStart,
+        domePhiEnd, domeThetaStart, domeThetaEnd
+      );
+      const domeMesh = new THREE.Mesh(domeGeometry, bodyMaterial);
+      domeMesh.castShadow = true;
+      bodyMesh.add(domeMesh);
+      domeMesh.position.y = .5;
 
-      try {
+// =============================================================== Turret & Turret camera ======================================================================
 
-        const turrentWidth = .1;
-        const turretHeight = .1;
-        const turretLength = carLength * .75 * .2;
-        const turretGeometry = new THREE.BoxBufferGeometry(
-          turrentWidth, turretHeight, turretLength
-        );
-        const turretMesh = new THREE.Mesh(turretGeometry, bodyMaterial);
-        const turretPivot = new THREE.Object3D();
-        turretMesh.castShadow = true;
-        turretPivot.scale.set(5, 5, 5);
-        turretPivot.position.y = .5;
-        turretPivot.position.z = turretLength * .5;
-        turretPivot.add(turretMesh);
-        bodyMesh.add(turretPivot);
-      } catch (error) {
-        console.error('Error with turret ->', error);
-      }
+      const turrentWidth = .1;
+      const turretHeight = .1;
+      const turretLength = carLength * .75 * .2;
+      const turretGeometry = new THREE.BoxBufferGeometry(
+        turrentWidth, turretHeight, turretLength
+      );
+      const turretMesh = new THREE.Mesh(turretGeometry, bodyMaterial);
+      const turretPivot = new THREE.Object3D();
+      turretMesh.castShadow = true;
+      turretPivot.scale.set(5, 5, 5);
+      turretPivot.position.y = .5;
+      turretPivot.position.z = turretLength * .5;
+      turretPivot.add(turretMesh);
+      bodyMesh.add(turretPivot);
+      console.log('Body Mesh ->', bodyMesh);
 
+
+      const turretCamera = this.makeCamera();
+      turretCamera.position.y = .75 * .2;
+      turretMesh.add(turretCamera);
+      console.log('Turret Mesh ->', turretMesh);
+
+
+      // ================================================================= Target & Target camera ==============================================================
+
+      const targetGeometry = new THREE.SphereBufferGeometry(.5, 6, 3);
+      const targetMaterial = new THREE.MeshPhongMaterial({
+        color: 0x00ff00,
+        flatShading: true
+      });
+      const targetMesh = new THREE.Mesh(targetGeometry, targetMaterial);
+      const targetOrbit = new THREE.Object3D();
+      const targetElevation = new THREE.Object3D();
+      const targetBob = new THREE.Object3D();
+      targetMesh.castShadow = true;
+      this.scene.add(targetOrbit);
+      targetOrbit.add(targetElevation);
+      targetElevation.position.z = carLength * 2;
+      targetElevation.position.y = 8;
+      targetElevation.add(targetBob);
+      targetBob.add(targetMesh);
+      console.log('Target bob ->', targetBob);
+
+
+      const targetCamera = this.makeCamera();
+      const targetCameraPivot = new THREE.Object3D();
+      targetCamera.position.y = 1;
+      targetCamera.position.y = -2;
+      targetCamera.rotation.y = Math.PI;
+      targetBob.add(targetCameraPivot);
+      targetCameraPivot.add(targetCamera);
+      console.log('Target bob 2 ->', targetBob);
+
+      // ================================================================= Animate ==============================================================
 
       try {
 
@@ -180,9 +220,11 @@ export class AppComponent {
           requestAnimationFrame(animate);
         }
         animate();
+
       } catch (error) {
         console.error('Error in animate() ->', error);
       }
+
     } catch (error) {
       console.error('Error in init() ->', error);
     }
