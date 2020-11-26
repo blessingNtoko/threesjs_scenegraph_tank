@@ -292,7 +292,6 @@ export class AppComponent {
           });
 
           const camera = cameras[time * .25 % cameras.length | 0];
-          console.log('Kamera ->', time * .25 % cameras.length | 0);
 
           infoElem.textContent = camera.desc;
 
