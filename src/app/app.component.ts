@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { truncate } from 'fs';
 import * as THREE from 'three';
 
 @Component({
