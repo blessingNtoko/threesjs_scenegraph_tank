@@ -147,18 +147,18 @@ export class AppComponent {
 
 // =============================================================== Turret & Turret camera ======================================================================
 
-      const turrentWidth = .1;
+      const turretWidth = .1;
       const turretHeight = .1;
       const turretLength = carLength * .75 * .2;
       const turretGeometry = new THREE.BoxBufferGeometry(
-        turrentWidth, turretHeight, turretLength
+        turretWidth, turretHeight, turretLength
       );
       const turretMesh = new THREE.Mesh(turretGeometry, bodyMaterial);
       const turretPivot = new THREE.Object3D();
       turretMesh.castShadow = true;
       turretPivot.scale.set(5, 5, 5);
       turretPivot.position.y = .5;
-      turretPivot.position.z = turretLength * .5;
+      turretMesh.position.z = turretLength * .5;
       turretPivot.add(turretMesh);
       bodyMesh.add(turretPivot);
       console.log('Body Mesh ->', bodyMesh);
@@ -222,7 +222,7 @@ export class AppComponent {
       });
       const splineObject = new THREE.Line(geometry, material);
       splineObject.rotation.x = Math.PI * .5;
-      splineObject.rotation.y = .05;
+      splineObject.position.y = .05;
       this.scene.add(splineObject);
 
       // ================================================================= Target, Tank and Cameras ==============================================================
@@ -240,6 +240,7 @@ export class AppComponent {
 
       const infoElem = document.querySelector('#info');
 
+      // ================================================================= Resize ==============================================================
 
       window.addEventListener('resize', () => {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -272,17 +273,28 @@ export class AppComponent {
           const tankTime = time * .05;
           curve.getPointAt(tankTime % 1, tankPosition);
           curve.getPointAt((tankTime + .01) % 1, tankTarget);
-          tank.position.set(tankPosition.x, 0, tank.position.y);
+          tank.position.set(tankPosition.x, 0, tankPosition.y);
           tank.lookAt(tankTarget.x, 0, tankTarget.y);
 
           // face turret at target
           targetMesh.getWorldPosition(targetPosition);
+          turretPivot.lookAt(targetPosition);
+
+          // make turretCamera look at target
+          turretCamera.lookAt(targetPosition);
+
+          // make targetCameraPivot look at the tank
+          tank.getWorldPosition(targetPosition);
+          targetCameraPivot.lookAt(targetPosition);
 
           wheelMeshes.forEach(mesh => {
-            mesh.rotation.x += .03;
+            mesh.rotation.x = time * 3;
           });
 
-          this.renderer.render(this.scene, overAllcamera)
+          const camera = cameras[time * .25 % cameras.length | 0];
+          infoElem.textContent = camera.desc;
+
+          this.renderer.render(this.scene, camera.cam);
           requestAnimationFrame(animate);
         }
         requestAnimationFrame(animate);
